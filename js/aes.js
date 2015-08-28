@@ -15,17 +15,16 @@
  *
  * Copyright (c) 2010-2014 Digital Bazaar, Inc.
  */
-(function() {
 /* ########## Begin module implementation ########## */
-function initModule(forge) {
-
+var util = require("./util")
+var cipher = require("./cipher");
 /* AES API */
-forge.aes = forge.aes || {};
+var aes = {};
 
 /**
  * Deprecated. Instead, use:
  *
- * var cipher = forge.cipher.createCipher('AES-<mode>', key);
+ * var cipher = cipher.createCipher('AES-<mode>', key);
  * cipher.start({iv: iv});
  *
  * Creates an AES cipher object to encrypt data using the given symmetric key.
@@ -41,7 +40,7 @@ forge.aes = forge.aes || {};
  *
  * @return the cipher.
  */
-forge.aes.startEncrypting = function(key, iv, output, mode) {
+aes.startEncrypting = function(key, iv, output, mode) {
   var cipher = _createCipher({
     key: key,
     output: output,
@@ -55,7 +54,7 @@ forge.aes.startEncrypting = function(key, iv, output, mode) {
 /**
  * Deprecated. Instead, use:
  *
- * var cipher = forge.cipher.createCipher('AES-<mode>', key);
+ * var cipher = cipher.createCipher('AES-<mode>', key);
  *
  * Creates an AES cipher object to encrypt data using the given symmetric key.
  *
@@ -67,7 +66,7 @@ forge.aes.startEncrypting = function(key, iv, output, mode) {
  *
  * @return the cipher.
  */
-forge.aes.createEncryptionCipher = function(key, mode) {
+aes.createEncryptionCipher = function(key, mode) {
   return _createCipher({
     key: key,
     output: null,
@@ -79,7 +78,7 @@ forge.aes.createEncryptionCipher = function(key, mode) {
 /**
  * Deprecated. Instead, use:
  *
- * var decipher = forge.cipher.createDecipher('AES-<mode>', key);
+ * var decipher = cipher.createDecipher('AES-<mode>', key);
  * decipher.start({iv: iv});
  *
  * Creates an AES cipher object to decrypt data using the given symmetric key.
@@ -95,7 +94,7 @@ forge.aes.createEncryptionCipher = function(key, mode) {
  *
  * @return the cipher.
  */
-forge.aes.startDecrypting = function(key, iv, output, mode) {
+aes.startDecrypting = function(key, iv, output, mode) {
   var cipher = _createCipher({
     key: key,
     output: output,
@@ -109,7 +108,7 @@ forge.aes.startDecrypting = function(key, iv, output, mode) {
 /**
  * Deprecated. Instead, use:
  *
- * var decipher = forge.cipher.createDecipher('AES-<mode>', key);
+ * var decipher = cipher.createDecipher('AES-<mode>', key);
  *
  * Creates an AES cipher object to decrypt data using the given symmetric key.
  *
@@ -121,7 +120,7 @@ forge.aes.startDecrypting = function(key, iv, output, mode) {
  *
  * @return the cipher.
  */
-forge.aes.createDecryptionCipher = function(key, mode) {
+aes.createDecryptionCipher = function(key, mode) {
   return _createCipher({
     key: key,
     output: null,
@@ -138,7 +137,7 @@ forge.aes.createDecryptionCipher = function(key, mode) {
  *
  * @return the AES algorithm object.
  */
-forge.aes.Algorithm = function(name, mode) {
+aes.Algorithm = function(name, mode) {
   if(!init) {
     initialize();
   }
@@ -166,7 +165,7 @@ forge.aes.Algorithm = function(name, mode) {
  *          decrypt true if the algorithm should be initialized for decryption,
  *            false for encryption.
  */
-forge.aes.Algorithm.prototype.initialize = function(options) {
+aes.Algorithm.prototype.initialize = function(options) {
   if(this._init) {
     return;
   }
@@ -182,19 +181,19 @@ forge.aes.Algorithm.prototype.initialize = function(options) {
   if(typeof key === 'string' &&
     (key.length === 16 || key.length === 24 || key.length === 32)) {
     // convert key string into byte buffer
-    key = forge.util.createBuffer(key);
-  } else if(forge.util.isArray(key) &&
+    key = util.createBuffer(key);
+  } else if(util.isArray(key) &&
     (key.length === 16 || key.length === 24 || key.length === 32)) {
     // convert key integer array into byte buffer
     tmp = key;
-    key = forge.util.createBuffer();
+    key = util.createBuffer();
     for(var i = 0; i < tmp.length; ++i) {
       key.putByte(tmp[i]);
     }
   }
 
   // convert key byte buffer into 32-bit integer array
-  if(!forge.util.isArray(key)) {
+  if(!util.isArray(key)) {
     tmp = key;
     key = [];
 
@@ -209,7 +208,7 @@ forge.aes.Algorithm.prototype.initialize = function(options) {
   }
 
   // key must be an array of 32-bit integers by now
-  if(!forge.util.isArray(key) ||
+  if(!util.isArray(key) ||
     !(key.length === 4 || key.length === 6 || key.length === 8)) {
     throw new Error('Invalid key parameter.');
   }
@@ -231,7 +230,7 @@ forge.aes.Algorithm.prototype.initialize = function(options) {
  *
  * @return the expanded key.
  */
-forge.aes._expandKey = function(key, decrypt) {
+aes._expandKey = function(key, decrypt) {
   if(!init) {
     initialize();
   }
@@ -246,23 +245,23 @@ forge.aes._expandKey = function(key, decrypt) {
  * @param output an array of block-size 32-bit words.
  * @param decrypt true to decrypt, false to encrypt.
  */
-forge.aes._updateBlock = _updateBlock;
+aes._updateBlock = _updateBlock;
 
 
 /** Register AES algorithms **/
 
-registerAlgorithm('AES-ECB', forge.cipher.modes.ecb);
-registerAlgorithm('AES-CBC', forge.cipher.modes.cbc);
-registerAlgorithm('AES-CFB', forge.cipher.modes.cfb);
-registerAlgorithm('AES-OFB', forge.cipher.modes.ofb);
-registerAlgorithm('AES-CTR', forge.cipher.modes.ctr);
-registerAlgorithm('AES-GCM', forge.cipher.modes.gcm);
+registerAlgorithm('AES-ECB', cipher.modes.ecb);
+registerAlgorithm('AES-CBC', cipher.modes.cbc);
+registerAlgorithm('AES-CFB', cipher.modes.cfb);
+registerAlgorithm('AES-OFB', cipher.modes.ofb);
+registerAlgorithm('AES-CTR', cipher.modes.ctr);
+registerAlgorithm('AES-GCM', cipher.modes.gcm);
 
 function registerAlgorithm(name, mode) {
   var factory = function() {
-    return new forge.aes.Algorithm(name, mode);
+    return new aes.Algorithm(name, mode);
   };
-  forge.cipher.registerAlgorithm(name, factory);
+  cipher.registerAlgorithm(name, factory);
 }
 
 
@@ -1044,8 +1043,8 @@ function _updateBlock(w, input, output, decrypt) {
 /**
  * Deprecated. Instead, use:
  *
- * forge.cipher.createCipher('AES-<mode>', key);
- * forge.cipher.createDecipher('AES-<mode>', key);
+ * cipher.createCipher('AES-<mode>', key);
+ * cipher.createDecipher('AES-<mode>', key);
  *
  * Creates a deprecated AES cipher object. This object's mode will default to
  * CBC (cipher-block-chaining).
@@ -1068,9 +1067,9 @@ function _createCipher(options) {
 
   var cipher;
   if(options.decrypt) {
-    cipher = forge.cipher.createDecipher(algorithm, options.key);
+    cipher = cipher.createDecipher(algorithm, options.key);
   } else {
-    cipher = forge.cipher.createCipher(algorithm, options.key);
+    cipher = cipher.createCipher(algorithm, options.key);
   }
 
   // backwards compatible start API
@@ -1078,7 +1077,7 @@ function _createCipher(options) {
   cipher.start = function(iv, options) {
     // backwards compatibility: support second arg as output buffer
     var output = null;
-    if(options instanceof forge.util.ByteBuffer) {
+    if(options instanceof util.ByteBuffer) {
       output = options;
       options = {};
     }
@@ -1091,57 +1090,3 @@ function _createCipher(options) {
   return cipher;
 }
 
-} // end module implementation
-
-/* ########## Begin module wrapper ########## */
-var name = 'aes';
-if(typeof define !== 'function') {
-  // NodeJS -> AMD
-  if(typeof module === 'object' && module.exports) {
-    var nodeJS = true;
-    define = function(ids, factory) {
-      factory(require, module);
-    };
-  } else {
-    // <script>
-    if(typeof forge === 'undefined') {
-      forge = {};
-    }
-    return initModule(forge);
-  }
-}
-// AMD
-var deps;
-var defineFunc = function(require, module) {
-  module.exports = function(forge) {
-    var mods = deps.map(function(dep) {
-      return require(dep);
-    }).concat(initModule);
-    // handle circular dependencies
-    forge = forge || {};
-    forge.defined = forge.defined || {};
-    if(forge.defined[name]) {
-      return forge[name];
-    }
-    forge.defined[name] = true;
-    for(var i = 0; i < mods.length; ++i) {
-      mods[i](forge);
-    }
-    return forge[name];
-  };
-};
-var tmpDefine = define;
-define = function(ids, factory) {
-  deps = (typeof ids === 'string') ? factory.slice(2) : ids.slice(2);
-  if(nodeJS) {
-    delete define;
-    return tmpDefine.apply(null, Array.prototype.slice.call(arguments, 0));
-  }
-  define = tmpDefine;
-  return define.apply(null, Array.prototype.slice.call(arguments, 0));
-};
-define(
-  ['require', 'module', './cipher', './cipherModes', './util'], function() {
-  defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
-});
-})();

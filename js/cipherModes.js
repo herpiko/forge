@@ -5,14 +5,12 @@
  *
  * Copyright (c) 2010-2014 Digital Bazaar, Inc.
  */
-(function() {
 /* ########## Begin module implementation ########## */
-function initModule(forge) {
 
-forge.cipher = forge.cipher || {};
 
 // supported cipher modes
-var modes = forge.cipher.modes = forge.cipher.modes || {};
+var util = require("./util");
+var modes = {};
 
 
 /** Electronic codebook (ECB) (Don't use this; it's not secure) **/
@@ -210,7 +208,7 @@ modes.cfb = function(options) {
   this._inBlock = null;
   this._outBlock = new Array(this._ints);
   this._partialBlock = new Array(this._ints);
-  this._partialOutput = forge.util.createBuffer();
+  this._partialOutput = util.createBuffer();
   this._partialBytes = 0;
 };
 
@@ -354,7 +352,7 @@ modes.ofb = function(options) {
   this._ints = this.blockSize / 4;
   this._inBlock = null;
   this._outBlock = new Array(this._ints);
-  this._partialOutput = forge.util.createBuffer();
+  this._partialOutput = util.createBuffer();
   this._partialBytes = 0;
 };
 
@@ -440,7 +438,7 @@ modes.ctr = function(options) {
   this._ints = this.blockSize / 4;
   this._inBlock = null;
   this._outBlock = new Array(this._ints);
-  this._partialOutput = forge.util.createBuffer();
+  this._partialOutput = util.createBuffer();
   this._partialBytes = 0;
 };
 
@@ -522,7 +520,7 @@ modes.gcm = function(options) {
   this._ints = this.blockSize / 4;
   this._inBlock = new Array(this._ints);
   this._outBlock = new Array(this._ints);
-  this._partialOutput = forge.util.createBuffer();
+  this._partialOutput = util.createBuffer();
   this._partialBytes = 0;
 
   // R is actually this value concatenated with 120 more zero bits, but
@@ -536,7 +534,7 @@ modes.gcm.prototype.start = function(options) {
     throw new Error('Invalid IV parameter.');
   }
   // ensure IV is a byte buffer
-  var iv = forge.util.createBuffer(options.iv);
+  var iv = util.createBuffer(options.iv);
 
   // no ciphered data processed yet
   this._cipherLength = 0;
@@ -544,9 +542,9 @@ modes.gcm.prototype.start = function(options) {
   // default additional data is none
   var additionalData;
   if('additionalData' in options) {
-    additionalData = forge.util.createBuffer(options.additionalData);
+    additionalData = util.createBuffer(options.additionalData);
   } else {
-    additionalData = forge.util.createBuffer();
+    additionalData = util.createBuffer();
   }
 
   // default tag length is 128 bits
@@ -560,7 +558,7 @@ modes.gcm.prototype.start = function(options) {
   this._tag = null;
   if(options.decrypt) {
     // save tag to check later
-    this._tag = forge.util.createBuffer(options.tag).getBytes();
+    this._tag = util.createBuffer(options.tag).getBytes();
     if(this._tag.length !== (this._tagLength / 8)) {
       throw new Error('Authentication tag does not match tag length.');
     }
@@ -609,7 +607,7 @@ modes.gcm.prototype.start = function(options) {
   this._partialBytes = 0;
 
   // consume authentication data
-  additionalData = forge.util.createBuffer(additionalData);
+  additionalData = util.createBuffer(additionalData);
   // save additional data length as a BE 64-bit number
   this._aDataLength = from64To32(additionalData.length() * 8);
   // pad additional data to 128 bit (16 byte) block size
@@ -746,7 +744,7 @@ modes.gcm.prototype.afterFinish = function(output, options) {
   }
 
   // handle authentication tag
-  this.tag = forge.util.createBuffer();
+  this.tag = util.createBuffer();
 
   // concatenate additional data length with cipher length
   var lengths = this._aDataLength.concat(from64To32(this._cipherLength * 8));
@@ -964,18 +962,18 @@ modes.gcm.prototype.generateSubHashTable = function(mid, bits) {
 function transformIV(iv) {
   if(typeof iv === 'string') {
     // convert iv string into byte buffer
-    iv = forge.util.createBuffer(iv);
+    iv = util.createBuffer(iv);
   }
 
-  if(forge.util.isArray(iv) && iv.length > 4) {
+  if(util.isArray(iv) && iv.length > 4) {
     // convert iv byte array into byte buffer
     var tmp = iv;
-    iv = forge.util.createBuffer();
+    iv = util.createBuffer();
     for(var i = 0; i < tmp.length; ++i) {
       iv.putByte(tmp[i]);
     }
   }
-  if(!forge.util.isArray(iv)) {
+  if(!util.isArray(iv)) {
     // convert iv byte buffer into 32-bit integer array
     iv = [iv.getInt32(), iv.getInt32(), iv.getInt32(), iv.getInt32()];
   }
@@ -994,56 +992,3 @@ function from64To32(num) {
 }
 
 
-} // end module implementation
-
-/* ########## Begin module wrapper ########## */
-var name = 'cipherModes';
-if(typeof define !== 'function') {
-  // NodeJS -> AMD
-  if(typeof module === 'object' && module.exports) {
-    var nodeJS = true;
-    define = function(ids, factory) {
-      factory(require, module);
-    };
-  } else {
-    // <script>
-    if(typeof forge === 'undefined') {
-      forge = {};
-    }
-    return initModule(forge);
-  }
-}
-// AMD
-var deps;
-var defineFunc = function(require, module) {
-  module.exports = function(forge) {
-    var mods = deps.map(function(dep) {
-      return require(dep);
-    }).concat(initModule);
-    // handle circular dependencies
-    forge = forge || {};
-    forge.defined = forge.defined || {};
-    if(forge.defined[name]) {
-      return forge[name];
-    }
-    forge.defined[name] = true;
-    for(var i = 0; i < mods.length; ++i) {
-      mods[i](forge);
-    }
-    return forge[name];
-  };
-};
-var tmpDefine = define;
-define = function(ids, factory) {
-  deps = (typeof ids === 'string') ? factory.slice(2) : ids.slice(2);
-  if(nodeJS) {
-    delete define;
-    return tmpDefine.apply(null, Array.prototype.slice.call(arguments, 0));
-  }
-  define = tmpDefine;
-  return define.apply(null, Array.prototype.slice.call(arguments, 0));
-};
-define(['require', 'module', './util'], function() {
-  defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
-});
-})();

@@ -5,17 +5,12 @@
  *
  * Copyright (c) 2010-2014 Digital Bazaar, Inc.
  */
-(function() {
 /* ########## Begin module implementation ########## */
-function initModule(forge) {
-
-var sha1 = forge.sha1 = forge.sha1 || {};
-forge.md = forge.md || {};
-forge.md.algorithms = forge.md.algorithms || {};
-forge.md.sha1 = forge.md.algorithms.sha1 = sha1;
+var util = require("./util");
+var sha1 = {};
 
 /**
- * Creates a SHA-1 message digest object.
+ /* Creates a SHA-1 message digest object.
  *
  * @return a message digest object.
  */
@@ -29,7 +24,7 @@ sha1.create = function() {
   var _state = null;
 
   // input buffer
-  var _input = forge.util.createBuffer();
+  var _input = util.createBuffer();
 
   // used for word storage
   var _w = new Array(80);
@@ -53,7 +48,7 @@ sha1.create = function() {
   md.start = function() {
     md.messageLength = 0;
     md.messageLength64 = [0, 0];
-    _input = forge.util.createBuffer();
+    _input = util.createBuffer();
     _state = {
       h0: 0x67452301,
       h1: 0xEFCDAB89,
@@ -78,7 +73,7 @@ sha1.create = function() {
    */
   md.update = function(msg, encoding) {
     if(encoding === 'utf8') {
-      msg = forge.util.encodeUtf8(msg);
+      msg = util.encodeUtf8(msg);
     }
 
     // update message length
@@ -129,7 +124,7 @@ sha1.create = function() {
     // 512 bits == 64 bytes, 448 bits == 56 bytes, 64 bits = 8 bytes
     // _padding starts with 1 byte with first bit is set in it which
     // is byte value 128, then there may be up to 63 other pad bytes
-    var padBytes = forge.util.createBuffer();
+    var padBytes = util.createBuffer();
     padBytes.putBytes(_input.bytes());
     // 64 - (remaining msg + 8 bytes msg length) mod 64
     padBytes.putBytes(
@@ -149,7 +144,7 @@ sha1.create = function() {
       h4: _state.h4
     };
     _update(s2, _w, padBytes);
-    var rval = forge.util.createBuffer();
+    var rval = util.createBuffer();
     rval.putInt32(s2.h0);
     rval.putInt32(s2.h1);
     rval.putInt32(s2.h2);
@@ -171,7 +166,7 @@ var _initialized = false;
 function _init() {
   // create padding
   _padding = String.fromCharCode(128);
-  _padding += forge.util.fillString(String.fromCharCode(0x00), 64);
+  _padding += util.fillString(String.fromCharCode(0x00), 64);
 
   // now initialized
   _initialized = true;
@@ -286,57 +281,4 @@ function _update(s, w, bytes) {
     len -= 64;
   }
 }
-
-} // end module implementation
-
-/* ########## Begin module wrapper ########## */
-var name = 'sha1';
-if(typeof define !== 'function') {
-  // NodeJS -> AMD
-  if(typeof module === 'object' && module.exports) {
-    var nodeJS = true;
-    define = function(ids, factory) {
-      factory(require, module);
-    };
-  } else {
-    // <script>
-    if(typeof forge === 'undefined') {
-      forge = {};
-    }
-    return initModule(forge);
-  }
-}
-// AMD
-var deps;
-var defineFunc = function(require, module) {
-  module.exports = function(forge) {
-    var mods = deps.map(function(dep) {
-      return require(dep);
-    }).concat(initModule);
-    // handle circular dependencies
-    forge = forge || {};
-    forge.defined = forge.defined || {};
-    if(forge.defined[name]) {
-      return forge[name];
-    }
-    forge.defined[name] = true;
-    for(var i = 0; i < mods.length; ++i) {
-      mods[i](forge);
-    }
-    return forge[name];
-  };
-};
-var tmpDefine = define;
-define = function(ids, factory) {
-  deps = (typeof ids === 'string') ? factory.slice(2) : ids.slice(2);
-  if(nodeJS) {
-    delete define;
-    return tmpDefine.apply(null, Array.prototype.slice.call(arguments, 0));
-  }
-  define = tmpDefine;
-  return define.apply(null, Array.prototype.slice.call(arguments, 0));
-};
-define(['require', 'module', './util'], function() {
-  defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
-});
-})();
+module.exports = sha1;
