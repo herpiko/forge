@@ -5,9 +5,17 @@
  *
  * Copyright (c) 2010-2013 Digital Bazaar, Inc.
  */
-(function() {
+/* (function() { */
 /* ########## Begin module implementation ########## */
-function initModule(forge) {
+/* function initModule(forge) { */
+
+if (!window.PKIWebSDK) {
+  window.PKIWebSDK = function(){
+  }
+  window.PKIWebSDK.private = {}
+  window.PKIWebSDK.private.forge = {}
+}
+forge = window.PKIWebSDK.private.forge || {}
 
 forge.pki = forge.pki || {};
 var oids = forge.pki.oids = forge.oids = forge.oids || {};
@@ -214,56 +222,58 @@ oids['emailProtection'] = '1.3.6.1.5.5.7.3.4';
 oids['1.3.6.1.5.5.7.3.8'] = 'timeStamping';
 oids['timeStamping'] = '1.3.6.1.5.5.7.3.8';
 
-} // end module implementation
+module.exports = oids;
 
-/* ########## Begin module wrapper ########## */
-var name = 'oids';
-if(typeof define !== 'function') {
-  // NodeJS -> AMD
-  if(typeof module === 'object' && module.exports) {
-    var nodeJS = true;
-    define = function(ids, factory) {
-      factory(require, module);
-    };
-  } else {
-    // <script>
-    if(typeof forge === 'undefined') {
-      forge = {};
-    }
-    return initModule(forge);
-  }
-}
-// AMD
-var deps;
-var defineFunc = function(require, module) {
-  module.exports = function(forge) {
-    var mods = deps.map(function(dep) {
-      return require(dep);
-    }).concat(initModule);
-    // handle circular dependencies
-    forge = forge || {};
-    forge.defined = forge.defined || {};
-    if(forge.defined[name]) {
-      return forge[name];
-    }
-    forge.defined[name] = true;
-    for(var i = 0; i < mods.length; ++i) {
-      mods[i](forge);
-    }
-    return forge[name];
-  };
-};
-var tmpDefine = define;
-define = function(ids, factory) {
-  deps = (typeof ids === 'string') ? factory.slice(2) : ids.slice(2);
-  if(nodeJS) {
-    delete define;
-    return tmpDefine.apply(null, Array.prototype.slice.call(arguments, 0));
-  }
-  define = tmpDefine;
-  return define.apply(null, Array.prototype.slice.call(arguments, 0));
-};
-define(['require', 'module'], function() {
-  defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
-});
-})();
+/* } // end module implementation */
+
+/* /1* ########## Begin module wrapper ########## *1/ */
+/* var name = 'oids'; */
+/* if(typeof define !== 'function') { */
+/*   // NodeJS -> AMD */
+/*   if(typeof module === 'object' && module.exports) { */
+/*     var nodeJS = true; */
+/*     define = function(ids, factory) { */
+/*       factory(require, module); */
+/*     }; */
+/*   } else { */
+/*     // <script> */
+/*     if(typeof forge === 'undefined') { */
+/*       forge = {}; */
+/*     } */
+/*     return initModule(forge); */
+/*   } */
+/* } */
+/* // AMD */
+/* var deps; */
+/* var defineFunc = function(require, module) { */
+/*   module.exports = function(forge) { */
+/*     var mods = deps.map(function(dep) { */
+/*       return require(dep); */
+/*     }).concat(initModule); */
+/*     // handle circular dependencies */
+/*     forge = forge || {}; */
+/*     forge.defined = forge.defined || {}; */
+/*     if(forge.defined[name]) { */
+/*       return forge[name]; */
+/*     } */
+/*     forge.defined[name] = true; */
+/*     for(var i = 0; i < mods.length; ++i) { */
+/*       mods[i](forge); */
+/*     } */
+/*     return forge[name]; */
+/*   }; */
+/* }; */
+/* var tmpDefine = define; */
+/* define = function(ids, factory) { */
+/*   deps = (typeof ids === 'string') ? factory.slice(2) : ids.slice(2); */
+/*   if(nodeJS) { */
+/*     delete define; */
+/*     return tmpDefine.apply(null, Array.prototype.slice.call(arguments, 0)); */
+/*   } */
+/*   define = tmpDefine; */
+/*   return define.apply(null, Array.prototype.slice.call(arguments, 0)); */
+/* }; */
+/* define(['require', 'module'], function() { */
+/*   defineFunc.apply(null, Array.prototype.slice.call(arguments, 0)); */
+/* }); */
+/* })(); */
